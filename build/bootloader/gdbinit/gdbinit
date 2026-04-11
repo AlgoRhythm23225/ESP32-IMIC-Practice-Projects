@@ -1,0 +1,2 @@
+source C:/Users/ASUS/Desktop/ESP32 Projects/rc522_esp/build/bootloader/gdbinit/symbols
+source C:/Users/ASUS/Desktop/ESP32 Projects/rc522_esp/build/bootloader/gdbinit/connect
