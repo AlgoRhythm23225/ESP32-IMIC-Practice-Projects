@@ -1,7 +1,5 @@
 # Use-RC522-to-Toggle-Fadding-and-Blinking-LED-via-SPI
 
-# RC522 RFID - ESP32 LED Control
-
 This project uses ESP32 with RC522 RFID module to toggle LED modes (fading and blinking) based on scanned RFID cards.
 
 ## Features
@@ -18,17 +16,17 @@ This project uses ESP32 with RC522 RFID module to toggle LED modes (fading and b
 - Jumper wire
 
 ## Wiring
-RC522   => ESP32
-SDA     => GPIO5    
-SCK     => GPIO18
-MOSI    => GPIO23
-MISO    => GPIO19
-RST     => GPIO22
-GND     => GND
-3.3V    => 3.3V
+1. RC522   => ESP32
+2. SDA     => GPIO5    
+3. SCK     => GPIO18
+4. MOSI    => GPIO23
+5. MISO    => GPIO19
+6. RST     => GPIO22
+7. GND     => GND
+8. 3.3V    => 3.3V
 
-ESP32.GPIO15 => Resistor => LED => GND
-ESP32.GPIO16 => Resistor => LED => GND
+9. ESP32.GPIO15 => Resistor => LED => GND
+10. ESP32.GPIO16 => Resistor => LED => GND
 
 ## Setup
 1. Install ESP-IDF and git
