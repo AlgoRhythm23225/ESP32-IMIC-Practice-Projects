@@ -54,4 +54,15 @@ This project uses ESP32 with RC522 RFID module to toggle LED modes (fading and b
     Push tag close to RC522, LEDS start to fadding and Blinking
     Push card close, LEDS off again
 
+## Acknowledgements
+
+This project is based on the RC522 RFID implementation from:
+https://github.com/sbrinkmann/rc522-rfid
+
+Specifically, the following files are adapted:
+- rc522.c
+- rc522.h
+- rfid.c
+- rfid.h
+
     
