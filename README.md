@@ -16,7 +16,7 @@ This project uses ESP32 with RC522 RFID module to toggle LED modes (fading and b
 - Jumper wire
 
 ## Wiring
-RC522   => ESP32
+RC522   => ESP32 
 SDA     => GPIO5    
 SCK     => GPIO18
 MOSI    => GPIO23
