@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -19,13 +18,14 @@ void app_main(void)
         
         // dac
         int dac_value = voltage_to_dac(voltage);
+
         dac_to_output(dac_value);
  
-        // print
+        // print to terminal
         ESP_LOGI(TAG, "Raw: %d, Voltage: %d, Dac Voltage: %d", adc_raw, voltage, dac_value);
         
         // delay
-        vTaskDelay(pdMS_TO_TICKS(25));
+        vTaskDelay(pdMS_TO_TICKS(25));                  // 25ms
     }
 }
 
