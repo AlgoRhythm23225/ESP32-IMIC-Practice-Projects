@@ -47,3 +47,24 @@ int adc_raw_to_voltage(int adc_raw){
     
     return voltage;
 }
+
+// How to run
+    // adc_init();
+    // dac_init();
+
+    // while (1) {   
+    //     // adc     
+    //     int adc_raw = adc_avg_filter_raw();
+    //     int voltage = adc_raw_to_voltage(adc_raw);
+        
+    //     // dac
+    //     int dac_value = voltage_to_dac(voltage);
+
+    //     dac_to_output(dac_value);
+ 
+    //     // print to terminal
+    //     ESP_LOGI(TAG, "Raw: %d, Voltage: %d, Dac Voltage: %d", adc_raw, voltage, dac_value);
+        
+    //     // delay
+    //     vTaskDelay(pdMS_TO_TICKS(25));                  // 25ms ~ Sample rate 40 Hz
+    // }

@@ -4,4 +4,8 @@ idf_component_register(SRCS "ESP_DAC.c" "ESP_ADC.c" "ESP_SPI.c" "rc522.c" "rfid.
                                 esp_driver_gpio driver 
                                 esp_driver_ledc
                                 esp_adc
-                                esp_driver_dac)
+                                esp_driver_dac
+                                esp_wifi
+                                nvs_flash 
+                                bt                              
+                                )
