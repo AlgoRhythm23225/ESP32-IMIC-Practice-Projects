@@ -343,7 +343,8 @@ static void gatts_event_handler(esp_gatts_cb_event_t event,
                 memcpy(data, param->write.value, len);
                 // data[len] = 0; đã được đảm bảo bởi {0} ở trên
 
-                ESP_LOGI(TAG, "Write received [%d bytes]: %s", len, data);
+                // ESP_LOGI(TAG, "Write received [%d bytes]: %s", len, data);
+                ESP_LOGI(TAG, "Write received [%d bytes]", len);
                 parse_data(data);
             }
 
@@ -429,16 +430,21 @@ static void ble_init(void)
     // Giải phóng bộ nhớ BT Classic (không dùng)
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
+    // Set up Controller (LL & PHY)
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
     ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_BLE));
 
+    // Set up blueroid (host)
     ESP_ERROR_CHECK(esp_bluedroid_init());
     ESP_ERROR_CHECK(esp_bluedroid_enable());
 
+    // Set up handler
     ESP_ERROR_CHECK(esp_ble_gap_register_callback(gap_event_handler));
     ESP_ERROR_CHECK(esp_ble_gatts_register_callback(gatts_event_handler));
-    ESP_ERROR_CHECK(esp_ble_gatts_app_register(0));
+    
+    // Sign up APP ID
+    ESP_ERROR_CHECK(esp_ble_gatts_app_register(4));
 
     // Set MTU lớn hơn để hỗ trợ gói dữ liệu WiFi credentials dài
     ESP_ERROR_CHECK(esp_ble_gatt_set_local_mtu(200));
@@ -457,10 +463,10 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    ESP_LOGI(TAG, "Initializing WiFi...");
+    ESP_LOGI(TAG, "Initializing WiFi.................................................");
     wifi_init();
 
-    ESP_LOGI(TAG, "Initializing BLE...");
+    ESP_LOGI(TAG, "Initializing BLE..................................................");
     ble_init();
 
     ESP_LOGI(TAG, "BLE WiFi Config ready. Waiting for client...");

@@ -85,7 +85,7 @@ class BLEConfigApp:
         await self.client.write_gatt_char(WRITE_UUID, data)
         self.update_status("Data sent!")
 
-    def notification_handler(self, sender, data):
+    def notification_handler(self, data):
         msg = data.decode()
         self.update_status(f"ESP32: {msg}")
 
