@@ -1,12 +1,3 @@
-ESP32 - ADC - DAC
+Dùng BLE gửi Wifi để ESP32 kết nối
 
-Nguồn 3.3 V từ ESP32
-Chân input adc: GPIO 34
-Chân output dac: GPIO 25
-
-
-- Độ phân giải adc: 12 bit
-- Chọn adc1
-- Bộ suy giảm tín hiệu đi vào mạch: chọn 12db ~ 3.3v / 4 
-
-- Độ phân giải dac: 8 bit (fixed)
+Cách dùng: mở folder BLE GUI > app.py > Scan BLE > Chọn ESP32-WifiConfig > Connect > Đợi nó gửi thông báo advertising stopped > điền ID và mật khẩu Wifi của nhà vào > Send Wifi > Nó hiện BLE_WIFI_CFG: Got IP: xxx.xxx.xxx.xxx là thành công
