@@ -1,110 +1,111 @@
 import tkinter as tk
 import asyncio
 import threading
-from bleak import BleakScanner
-from bleak import BleakClient
+from bleak import BleakScanner, BleakClient
 
-# Set up window
-root = tk.Tk()
-root.title("ESP32 wifi Config")
-root.geometry("400x400")
+class BLEConfigApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("ESP32 WiFi Config")
+        self.root.geometry("400x500")
 
-# Label
-tk.Label(root, text = "Wifi SSID").pack()
-ssid_entry = tk.Entry(root)
-ssid_entry.pack()
+        self.client = None
+        self.loop = asyncio.new_event_loop()
+        
+        # Khởi tạo UI
+        self.setup_ui()
+        
+        # Chạy một thread riêng để quản lý các tác vụ Asyncio
+        self.thread = threading.Thread(target=self.start_async_loop, daemon=True)
+        self.thread.start()
 
-tk.Label(root, text = "Password").pack()
-pass_entry = tk.Entry(root, show = "*")
-pass_entry.pack()
+    def setup_ui(self):
+        tk.Label(self.root, text="Wifi SSID").pack()
+        self.ssid_entry = tk.Entry(self.root)
+        self.ssid_entry.pack()
 
-# Button
-scan_btn = tk.Button(root, text = "Scan BLE")
-scan_btn.pack(pady = 10)
+        tk.Label(self.root, text="Password").pack()
+        self.pass_entry = tk.Entry(self.root, show="*")
+        self.pass_entry.pack()
 
-connect_btn = tk.Button(root, text = "Connect")
-connect_btn.pack(pady = 10)
+        self.scan_btn = tk.Button(self.root, text="Scan BLE", command=self.on_scan)
+        self.scan_btn.pack(pady=5)
 
-send_btn = tk.Button(root, text = "Send Wifi")
-send_btn.pack(pady = 10)
+        self.connect_btn = tk.Button(self.root, text="Connect", command=self.on_connect)
+        self.connect_btn.pack(pady=5)
 
-device_list = tk.Listbox(root)
-device_list.pack(fill = "both", expand = "true")
+        self.send_btn = tk.Button(self.root, text="Send Wifi", command=self.on_send)
+        self.send_btn.pack(pady=5)
 
-# Scan func
-async def scan_ble():
-    devices = await BleakScanner.discover()
-    device_list.delete(0, tk.END)
-    for d in devices:
-        device_list.insert(tk.END, f"{d.name} - {d.address}") 
+        self.device_list = tk.Listbox(self.root)
+        self.device_list.pack(fill="both", expand=True)
 
-def run_scan():
-    asyncio.run(scan_ble())
+        self.status_label = tk.Label(self.root, text="Status: Idle", fg="blue")
+        self.status_label.pack(pady=10)
 
-def on_scan():
-    threading.Thread(target = run_scan).start()
+    # --- Quản lý Asyncio Loop ---
+    def start_async_loop(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
 
-scan_btn.config(command = on_scan)
+    def run_async(self, coro):
+        """Tiện ích để gửi task vào loop đang chạy"""
+        asyncio.run_coroutine_threadsafe(coro, self.loop)
 
-# Connect func
-client = None
+    # --- Các hàm nghiệp vụ ---
+    async def scan_ble_logic(self):
+        self.update_status("Scanning...")
+        devices = await BleakScanner.discover()
+        self.device_list.delete(0, tk.END)
+        for d in devices:
+            name = d.name if d.name else "Unknown"
+            self.device_list.insert(tk.END, f"{name} - {d.address}")
+        self.update_status("Scan complete")
 
-async def connect_device(address):
-    global client
-    client = BleakClient(address)
-    await client.connect()
-    print("Connected!")
+    async def connect_logic(self, address):
+        try:
+            self.update_status(f"Connecting to {address}...")
+            self.client = BleakClient(address)
+            await self.client.connect()
+            self.update_status("Connected!")
+            
+            # Đăng ký thông báo ngay sau khi kết nối
+            NOTIFY_UUID = "00009abc-0000-1000-8000-00805f9b34fb"
+            await self.client.start_notify(NOTIFY_UUID, self.notification_handler)
+        except Exception as e:
+            self.update_status(f"Error: {e}")
 
-def run_connect(address):
-    asyncio.run(connect_device(address))
+    async def send_wifi_logic(self):
+        if not self.client or not self.client.is_connected:
+            self.update_status("Error: Not connected!")
+            return
+        
+        WRITE_UUID = "00005678-0000-1000-8000-00805f9b34fb"
+        data = f"{self.ssid_entry.get()},{self.pass_entry.get()}".encode()
+        await self.client.write_gatt_char(WRITE_UUID, data)
+        self.update_status("Data sent!")
 
-def on_connect():
-    selected = device_list.get(tk.ACTIVE)
-    address = selected.split(" - ")[1]
-    threading.Thread(target = run_connect, args=(address,)).start()
+    def notification_handler(self, sender, data):
+        msg = data.decode()
+        self.update_status(f"ESP32: {msg}")
 
-connect_btn.config(command= on_connect)
+    # --- Bridge giữa UI và Async ---
+    def on_scan(self):
+        self.run_async(self.scan_ble_logic())
 
-# Send wifi func
-WRITE_UUID = "00005678-0000-1000-8000-00805f9b34fb"
+    def on_connect(self):
+        selected = self.device_list.get(tk.ACTIVE)
+        if " - " in selected:
+            address = selected.split(" - ")[1]
+            self.run_async(self.connect_logic(address))
 
-async def send_wifi():
-    ssid = ssid_entry.get()
-    password = pass_entry.get()
+    def on_send(self):
+        self.run_async(self.send_wifi_logic())
 
-    data = f"{ssid},{password}".encode()
+    def update_status(self, text):
+        self.root.after(0, lambda: self.status_label.config(text=f"Status: {text}"))
 
-    await client.write_gatt_char(WRITE_UUID, data)
-    print("Sent!")
-    # services = client.services
-    # for service in services:
-    #     for char in service.characteristics:
-    #         print(f"Đang có Characteristic: {char.uuid}")
-
-def on_send():
-    threading.Thread(target=lambda: asyncio.run(send_wifi())).start()
-
-send_btn.config(command = on_send)
-
-NOTIFY_UUID = "00009abc-0000-1000-8000-00805f9b34fb"
-
-def notification_handler(sender, data):
-    print("Received:", data.decode())
-
-async def start_notify():
-    await client.start_notify(NOTIFY_UUID, notification_handler)
-
-async def connect_device(address):
-    global client
-    client = BleakClient(address)
-    await client.connect()
-    await client.start_notify(NOTIFY_UUID, notification_handler)
-
-status_label = tk.Label(root, text = "Status: Idle")
-status_label.pack()
-
-def notification_handler(sender, data):
-    msg = data.decode()
-    status_label.config(text = f"Status: {msg}")
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = BLEConfigApp(root)
+    root.mainloop()

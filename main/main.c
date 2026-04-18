@@ -86,6 +86,7 @@ static void parse_data(char *data)
 {
     // 1. Tìm vị trí dấu phẩy đầu tiên làm dấu phân tách
     char *comma_ptr = strchr(data, ',');
+    // comma_ptr = NULL;
 
     if (!comma_ptr) {
         ESP_LOGE(TAG, "Invalid format: missing comma delimiter");
