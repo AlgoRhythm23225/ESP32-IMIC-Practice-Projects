@@ -1,5 +1,6 @@
 #include "ESP_BLE.h"
 #include "ESP_WIFI_BLE.h"
+// #include "esp_debug_helpers.h"
 
 const char *TAG = "BLE_WIFI_CFG";
 
@@ -90,9 +91,11 @@ void ble_init(void)
     
     // Sign up APP ID
     ESP_ERROR_CHECK(esp_ble_gatts_app_register(4));
-
+    ESP_LOGI(TAG, "Da dang ky app");
+    
     // Set MTU lớn hơn để hỗ trợ gói dữ liệu WiFi credentials dài
     ESP_ERROR_CHECK(esp_ble_gatt_set_local_mtu(200));
+    ESP_LOGI(TAG, "Da dang ky mtu");
 
     ble_start_advertising();
 }
@@ -162,6 +165,8 @@ void gatts_event_handler(esp_gatts_cb_event_t event,
                                 esp_gatt_if_t gatts_if,
                                 esp_ble_gatts_cb_param_t *param)
 {
+    // esp_backtrace_print(10);
+    // ESP_LOGI(TAG, "gatts_if = %d", gatts_if);
     switch (event) {
 
         // 1. App registered → lưu gatts_if → tạo service
