@@ -1,5 +1,5 @@
 idf_component_register(SRCS "rc522.c" "rfid.c"
-                    INCLUDE_DIRS "."
+                    INCLUDE_DIRS "." 
                     REQUIRES    esp_driver_spi 
                                 esp_driver_gpio driver 
                                 esp_driver_ledc
@@ -8,4 +8,5 @@ idf_component_register(SRCS "rc522.c" "rfid.c"
                                 esp_wifi
                                 nvs_flash 
                                 bt                              
-                                esp_http_server)
+                                esp_http_server
+                                esp32_peripherals)
