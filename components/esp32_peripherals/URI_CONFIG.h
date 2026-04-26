@@ -1,6 +1,25 @@
 #include "esp_http_server.h"
 #include "uri_handler.h"
 
+/* Hàm khởi tạo Server */
+httpd_handle_t start_webserver() {
+    httpd_handle_t server = NULL;
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+
+    // Start server
+    if (httpd_start(&server, &config) == ESP_OK) {
+        // Dang ky handler
+        httpd_register_uri_handler(server, &uri_info);
+        httpd_register_uri_handler(server, &uri_led);
+        httpd_register_uri_handler(server, &uri_on);
+        httpd_register_uri_handler(server, &uri_off);
+
+        return server;
+    }
+
+    return NULL;
+}
+
 /* Cấu hình URI */
 httpd_uri_t uri_info = {
     .uri        = "/info",
@@ -17,3 +36,34 @@ httpd_uri_t uri_led = {
 
 httpd_uri_t uri_on   = { .uri = "/led_on", .method = HTTP_GET, .handler = led_on_handler };
 httpd_uri_t uri_off  = { .uri = "/led_off", .method = HTTP_GET, .handler = led_off_handler };
+
+
+void dns_lookup_task(void *pvParameters) {
+
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    const struct addrinfo hints = {
+        .ai_family = AF_INET,
+        .ai_socktype = SOCK_STREAM
+    };
+
+    struct addrinfo *res;
+
+    ESP_LOGI(TAG, "Dang truy van DNS...");
+
+    int err = getaddrinfo("facebook.com", "443", &hints, &res);
+
+    if (err != 0 || res == NULL) {
+        ESP_LOGE(TAG, "DNS lookup failed err = %d res = %p", err, res);
+        return;
+    }else {
+   
+        // Lay dia chi IP dau tien
+        struct in_addr *addr;
+        addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
+        ESP_LOGI(TAG, "DNS lookup succeeded, IP = %s", inet_ntoa(*addr));
+        
+        freeaddrinfo(res);
+    }
+    vTaskDelete(NULL);
+}
