@@ -9,7 +9,7 @@
 #include "esp_gatt_common_api.h"
 
 
-extern const char *TAG;
+// extern const char *TAG;
 
 // ─── UUID definitions ─────────────────────────────────────────────────────────
 #define SERVICE_UUID        0x1234

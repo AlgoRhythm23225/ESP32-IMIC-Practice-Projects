@@ -3,6 +3,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 # set(EXTRA_COMPONENT_DIRS "components")  
+set(EXTRA_COMPONENT_DIRS "annoying_default_funcs")  
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(IMIC_ESP32)

@@ -1,4 +1,5 @@
-idf_component_register(SRCS "tcp_udp_socket.c" "ESP_ADC.c" "ESP_DAC.c" "ESP_SPI.c" "ESP_BLE.c" "wifi_sta_ap.c" "ESP_WIFI_BLE.c" "tcp_udp_socket.c"
+idf_component_register(SRCS "tcp_udp_socket.c" "ESP_ADC.c" "ESP_DAC.c" "ESP_SPI.c" "ESP_BLE.c" 
+                            "wifi_sta_ap.c" "ESP_WIFI_BLE.c" "tcp_udp_socket.c" "esp_client_http.c" "core_http_client.c" "llhttp.c"
                     INCLUDE_DIRS "."
                     REQUIRES    esp_driver_spi 
                                 esp_driver_gpio driver 
@@ -8,4 +9,7 @@ idf_component_register(SRCS "tcp_udp_socket.c" "ESP_ADC.c" "ESP_DAC.c" "ESP_SPI.
                                 esp_wifi
                                 nvs_flash 
                                 bt                              
-                                esp_http_server)
+                                esp_http_server
+                                esp_http_client
+                                esp-tls
+                                )

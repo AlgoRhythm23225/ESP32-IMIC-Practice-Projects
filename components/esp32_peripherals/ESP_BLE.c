@@ -2,7 +2,7 @@
 #include "ESP_WIFI_BLE.h"
 // #include "esp_debug_helpers.h"
 
-const char *TAG = "BLE_WIFI_CFG";
+static const char *TAG = "BLE_WIFI_CFG";
 
 // ─── Advertising flag ─────────────────────────────────────────────────────────
 uint8_t adv_config_done = 0;

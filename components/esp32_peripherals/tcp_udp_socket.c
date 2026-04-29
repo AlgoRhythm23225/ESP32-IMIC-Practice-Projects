@@ -32,7 +32,6 @@ void tcp_server_task(void *pvParameters) {
 
         inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
         ESP_LOGI(TAG_TCP_SERVER, "Socket accepted ip: %s", addr_str);
-        uint8_t led_state = 0;
 
         while (1) {
             // Nhan du lieu
@@ -46,15 +45,6 @@ void tcp_server_task(void *pvParameters) {
             
             // Gui phan hoi
             send(sock, rx_buffer, len, 0);
-            
-            if (strcmp(rx_buffer, "On led") == 0) {
-                led_state = 1;
-                gpio_set_level(LED_PIN, led_state);
-            }
-            else if (strcmp(rx_buffer, "Off led") == 0) {
-                led_state = 0;
-                gpio_set_level(LED_PIN, led_state);                
-            }           
         }
             close(sock);
     }

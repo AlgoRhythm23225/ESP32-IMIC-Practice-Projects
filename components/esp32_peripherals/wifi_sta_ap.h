@@ -1,6 +1,7 @@
 #include "esp_mac.h"
 #include "esp_wifi.h"
 #include "driver/gpio.h"
+#include "freertos/event_groups.h"
 
 #include "esp_event.h"
 #include "esp_log.h"
@@ -24,3 +25,12 @@ void wifi_event_handler(void* arg, esp_event_base_t event_base,
 void wifi_init_softap();
 
 void wifi_init_sta();
+
+#define WIFI_CONNECTED_BIT  BIT0
+extern EventGroupHandle_t wifi_event_group;
+void event_handler(void *arg,
+                        esp_event_base_t event_base,
+                        int32_t event_id,
+                        void *event_data);
+
+#define WIFI_WAIT_CONNECT(x)     xEventGroupWaitBits((x), WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY)

@@ -1,6 +1,7 @@
 #include "ESP_WIFI_BLE.h"
 #include "ESP_BLE.h"
 
+static const char* TAG = "Fix conflict";
 // ─── WiFi init ────────────────────────────────────────────────────────────────
 void wifi_init(void)
 {
