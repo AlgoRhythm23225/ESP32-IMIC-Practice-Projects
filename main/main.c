@@ -13,6 +13,7 @@
 #include "tcp_udp_socket.h"
 // from: "components/coreHTTP" folder
 #include "core_http_client.h"
+#include "URI_CONFIG.h"
 
 // static char* TAG = "Main_Example";
 void uartTransmitData(char* trans_data);
@@ -59,7 +60,7 @@ int32_t myPlatformTransportSend(NetworkContext_t * pNetworkContext,
 {
     return send(pNetworkContext->socket, pBuffer, bytesToSend, 0);
 }
-
+extern struct in_addr *addr;
 void sendRequest(void *pvParameters) {
     HTTPStatus_t httpLibraryStatus = HTTPSuccess;
     uint8_t* requestBody = NULL;
@@ -71,7 +72,8 @@ void sendRequest(void *pvParameters) {
         ESP_LOGI("[Socket]", "Socket created succesfully, ID=%d===============",sock);
     }
     struct sockaddr_in dest_addr;
-    dest_addr.sin_addr.s_addr = inet_addr("146.190.62.39");
+    // dest_addr.sin_addr.s_addr = inet_addr("146.190.62.39");
+    dest_addr.sin_addr.s_addr = inet_addr(inet_ntoa(*addr));
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(80);
 
@@ -122,7 +124,7 @@ void sendRequest(void *pvParameters) {
     printf("Read done!\n");
     // printf("%s", pResponse.pBuffer);
     printf("Size of data: %d\n", strlen((char *)pResponse.pBuffer));
-    uartTransmitData((char *)pResponse.pBody);
+    // uartTransmitData((char *)pResponse.pBody);
 
     close(sock);
 
@@ -158,10 +160,13 @@ void app_main(void)
     wifi_init_sta();
     uart_init();
 
+    xTaskCreate(dns_lookup_task, "look_up_dns", 4096, NULL, 5, NULL);
+    vTaskDelay(pdMS_TO_TICKS(4000));
     requestHeaderInit();
     WIFI_WAIT_CONNECT(wifi_event_group);
     xTaskCreate(sendRequest, "tcp_server", 8192, NULL, 5, NULL);
     printf(">>>>Main end<<<<\n");
+
 }
 
 

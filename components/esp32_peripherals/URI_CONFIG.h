@@ -1,7 +1,33 @@
 #include "esp_http_server.h"
 #include "uri_handler.h"
 
-static const char* TAG = "Test DNS";
+static const char* TAG = "[Test DNS]";
+
+/* Cấu hình URI */
+httpd_uri_t uri_info = {
+    .uri        = "/info",
+    .method     = HTTP_GET,
+    .handler    = info_handler,
+    .user_ctx   = NULL
+};
+httpd_uri_t uri_led = {
+    .uri        = "/led",
+    .method     = HTTP_GET,
+    .handler    = led_handler,
+    .user_ctx   = NULL
+};
+
+httpd_uri_t uri_on   = { 
+    .uri = "/led_on", 
+    .method = HTTP_GET, 
+    .handler = led_on_handler 
+};
+
+httpd_uri_t uri_off  = { 
+    .uri = "/led_off", 
+    .method = HTTP_GET, 
+    .handler = led_off_handler 
+};
 
 /* Hàm khởi tạo Server */
 httpd_handle_t start_webserver() {
@@ -22,24 +48,7 @@ httpd_handle_t start_webserver() {
     return NULL;
 }
 
-/* Cấu hình URI */
-httpd_uri_t uri_info = {
-    .uri        = "/info",
-    .method     = HTTP_GET,
-    .handler    = info_handler,
-    .user_ctx   = NULL
-};
-httpd_uri_t uri_led = {
-    .uri        = "/led",
-    .method     = HTTP_GET,
-    .handler    = led_handler,
-    .user_ctx   = NULL
-};
-
-httpd_uri_t uri_on   = { .uri = "/led_on", .method = HTTP_GET, .handler = led_on_handler };
-httpd_uri_t uri_off  = { .uri = "/led_off", .method = HTTP_GET, .handler = led_off_handler };
-
-
+struct in_addr *addr;
 void dns_lookup_task(void *pvParameters) {
 
     vTaskDelay(pdMS_TO_TICKS(2000));
@@ -53,15 +62,13 @@ void dns_lookup_task(void *pvParameters) {
 
     ESP_LOGI(TAG, "Dang truy van DNS...");
 
-    int err = getaddrinfo("facebook.com", "443", &hints, &res);
+    int err = getaddrinfo("httpforever.com", "80", &hints, &res);
 
     if (err != 0 || res == NULL) {
         ESP_LOGE(TAG, "DNS lookup failed err = %d res = %p", err, res);
         return;
-    }else {
-   
+    }else {   
         // Lay dia chi IP dau tien
-        struct in_addr *addr;
         addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
         ESP_LOGI(TAG, "DNS lookup succeeded, IP = %s", inet_ntoa(*addr));
         
