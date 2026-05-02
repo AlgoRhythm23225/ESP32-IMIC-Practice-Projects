@@ -165,7 +165,7 @@ void app_main(void)
 
     WIFI_WAIT_CONNECT(wifi_event_group);
     
-    xTaskCreate(dns_lookup_task, "look_up_dns", 4096, NULL, 5, NULL);
+    dns_lookup();
     DNS_WAIT_CONNECT(event_group);
 
     xTaskCreate(sendRequest, "tcp_server", 8192, NULL, 5, NULL);

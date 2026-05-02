@@ -52,9 +52,8 @@ httpd_handle_t start_webserver() {
 #define DNS_WAIT_CONNECT(x)     xEventGroupWaitBits((x), DNS_DONE_BIT, pdFALSE, pdTRUE, portMAX_DELAY)
 EventGroupHandle_t event_group;
 struct in_addr addr;
-void dns_lookup_task(void *pvParameters) {
+void dns_lookup() {
     event_group = xEventGroupCreate();
-    vTaskDelay(pdMS_TO_TICKS(2000));
 
     const struct addrinfo hints = {
         .ai_family = AF_INET,
@@ -77,6 +76,5 @@ void dns_lookup_task(void *pvParameters) {
         ESP_LOGI(TAG, "DNS lookup succeeded, IP = %s", inet_ntoa(addr));
         freeaddrinfo(res);
     }
-    vTaskDelete(NULL);
 }
 
