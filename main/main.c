@@ -60,7 +60,7 @@ int32_t myPlatformTransportSend(NetworkContext_t * pNetworkContext,
 {
     return send(pNetworkContext->socket, pBuffer, bytesToSend, 0);
 }
-extern struct in_addr *addr;
+extern struct in_addr addr;
 void sendRequest(void *pvParameters) {
     HTTPStatus_t httpLibraryStatus = HTTPSuccess;
     uint8_t* requestBody = NULL;
@@ -73,7 +73,7 @@ void sendRequest(void *pvParameters) {
     }
     struct sockaddr_in dest_addr;
     // dest_addr.sin_addr.s_addr = inet_addr("146.190.62.39");
-    dest_addr.sin_addr.s_addr = inet_addr(inet_ntoa(*addr));
+    dest_addr.sin_addr.s_addr = inet_addr(inet_ntoa(addr));
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(80);
 
@@ -124,7 +124,7 @@ void sendRequest(void *pvParameters) {
     printf("Read done!\n");
     // printf("%s", pResponse.pBuffer);
     printf("Size of data: %d\n", strlen((char *)pResponse.pBuffer));
-    // uartTransmitData((char *)pResponse.pBody);
+    uartTransmitData((char *)pResponse.pBody);
 
     close(sock);
 
@@ -154,16 +154,20 @@ void uartTransmitData(char* trans_data) {
     uart_write_bytes(UART_NUM_1, (const char*)trans_data, 6109);
 }
 
+
 void app_main(void)
 {
     nvs_flash_init_in_main();
     wifi_init_sta();
     uart_init();
 
-    xTaskCreate(dns_lookup_task, "look_up_dns", 4096, NULL, 5, NULL);
-    vTaskDelay(pdMS_TO_TICKS(4000));
     requestHeaderInit();
+
     WIFI_WAIT_CONNECT(wifi_event_group);
+    
+    xTaskCreate(dns_lookup_task, "look_up_dns", 4096, NULL, 5, NULL);
+    DNS_WAIT_CONNECT(event_group);
+
     xTaskCreate(sendRequest, "tcp_server", 8192, NULL, 5, NULL);
     printf(">>>>Main end<<<<\n");
 

@@ -48,9 +48,12 @@ httpd_handle_t start_webserver() {
     return NULL;
 }
 
-struct in_addr *addr;
+#define DNS_DONE_BIT (1 << 1)
+#define DNS_WAIT_CONNECT(x)     xEventGroupWaitBits((x), DNS_DONE_BIT, pdFALSE, pdTRUE, portMAX_DELAY)
+EventGroupHandle_t event_group;
+struct in_addr addr;
 void dns_lookup_task(void *pvParameters) {
-
+    event_group = xEventGroupCreate();
     vTaskDelay(pdMS_TO_TICKS(2000));
 
     const struct addrinfo hints = {
@@ -63,16 +66,17 @@ void dns_lookup_task(void *pvParameters) {
     ESP_LOGI(TAG, "Dang truy van DNS...");
 
     int err = getaddrinfo("httpforever.com", "80", &hints, &res);
-
+    
     if (err != 0 || res == NULL) {
         ESP_LOGE(TAG, "DNS lookup failed err = %d res = %p", err, res);
         return;
     }else {   
         // Lay dia chi IP dau tien
-        addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-        ESP_LOGI(TAG, "DNS lookup succeeded, IP = %s", inet_ntoa(*addr));
-        
+        addr = ((struct sockaddr_in *)res->ai_addr)->sin_addr;
+        xEventGroupSetBits(event_group, DNS_DONE_BIT);
+        ESP_LOGI(TAG, "DNS lookup succeeded, IP = %s", inet_ntoa(addr));
         freeaddrinfo(res);
     }
     vTaskDelete(NULL);
 }
+
