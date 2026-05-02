@@ -26,6 +26,7 @@
  * @file core_http_client.c
  * @brief Implements the user-facing functions in core_http_client.h.
  */
+
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
@@ -1816,7 +1817,7 @@ HTTPStatus_t HTTPClient_AddRangeHeader( HTTPRequestHeaders_t * pRequestHeaders,
 }
 
 /*-----------------------------------------------------------*/
-
+#include <stdio.h>
 HTTPStatus_t HTTPClient_SendHttpData( const TransportInterface_t * pTransport,
                                       HTTPClient_GetCurrentTimeFunc_t getTimestampMs,
                                       const uint8_t * pData,
@@ -1847,9 +1848,11 @@ HTTPStatus_t HTTPClient_SendHttpData( const TransportInterface_t * pTransport,
     /* Loop until all data is sent. */
     while( ( bytesRemaining > 0UL ) && ( returnStatus != HTTPNetworkError ) )
     {
+        printf("HTTPClient_SendHttpData - start ...\n");
         bytesSent = pTransport->send( pTransport->pNetworkContext,
                                       pIndex,
                                       bytesRemaining );
+        printf("HTTPClient_SendHttpData - end!\n");
 
         /* BytesSent less than zero is an error. */
         if( bytesSent < 0 )
@@ -2215,7 +2218,6 @@ static HTTPStatus_t sendHttpRequest( const TransportInterface_t * pTransport,
 }
 
 /*-----------------------------------------------------------*/
-
 HTTPStatus_t HTTPClient_Send( const TransportInterface_t * pTransport,
                               HTTPRequestHeaders_t * pRequestHeaders,
                               const uint8_t * pRequestBodyBuf,
@@ -2224,6 +2226,7 @@ HTTPStatus_t HTTPClient_Send( const TransportInterface_t * pTransport,
                               uint32_t sendFlags )
 {
     HTTPStatus_t returnStatus = HTTPInvalidParameter;
+    printf("HTTPClient_Send - start...\n");
 
     if( pTransport == NULL )
     {
@@ -2296,7 +2299,6 @@ HTTPStatus_t HTTPClient_Send( const TransportInterface_t * pTransport,
 
         returnStatus = HTTPSuccess;
     }
-
     if( returnStatus == HTTPSuccess )
     {
         returnStatus = sendHttpRequest( pTransport,
@@ -2306,6 +2308,7 @@ HTTPStatus_t HTTPClient_Send( const TransportInterface_t * pTransport,
                                         reqBodyBufLen,
                                         sendFlags );
     }
+    printf("HTTPClient_Send - end!\n");
 
     if( returnStatus == HTTPSuccess )
     {
@@ -2572,7 +2575,6 @@ HTTPStatus_t HTTPClient_ReadHeader( const HTTPResponse_t * pResponse,
                                     size_t * pValueLen )
 {
     HTTPStatus_t returnStatus = HTTPSuccess;
-
     if( pResponse == NULL )
     {
         LogError( ( "Parameter check failed: pResponse is NULL." ) );

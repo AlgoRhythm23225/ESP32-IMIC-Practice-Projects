@@ -1,6 +1,8 @@
 #include "esp_http_server.h"
 #include "uri_handler.h"
 
+static const char* TAG = "Test DNS";
+
 /* Hàm khởi tạo Server */
 httpd_handle_t start_webserver() {
     httpd_handle_t server = NULL;

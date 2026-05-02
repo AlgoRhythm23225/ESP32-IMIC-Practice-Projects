@@ -64,10 +64,10 @@ void wifi_init_softap()
     }
 
     // Áp dụng cấu hình
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));                   // Đặt chế độ hoạt động là AP
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));    
 
     // IV. KÍCH HOẠT
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));                   // Đặt chế độ hoạt động là AP
     ESP_ERROR_CHECK(esp_wifi_start());                                  // Phát wifi
 
     // LOGGING

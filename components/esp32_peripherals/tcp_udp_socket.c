@@ -28,7 +28,7 @@ void tcp_server_task(void *pvParameters) {
         int sock = accept(listen_sock, (struct sockaddr *)&source_addr, &addr_len);
         if (sock < 0) { 
             continue; 
-        }
+        }   
 
         inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
         ESP_LOGI(TAG_TCP_SERVER, "Socket accepted ip: %s", addr_str);

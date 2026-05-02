@@ -923,8 +923,8 @@ HTTPStatus_t HTTPClient_SendHttpData( const TransportInterface_t * pTransport,
  *
  * // Set the buffer to receive the HTTP response message into. The buffer is
  * // dynamically allocated for demonstration purposes only.
- * response.pBuffer = ( uint8_t* )malloc( 1024 );
- * response.bufferLen = 1024;
+ * pResponse.pBuffer = ( uint8_t* )malloc( 1024 );
+ * pResponse.bufferLen = 1024;
  *
  * httpLibraryStatus = HTTPClient_Send( &transportInterface,
  *                                      &requestHeaders,
@@ -935,7 +935,7 @@ HTTPStatus_t HTTPClient_SendHttpData( const TransportInterface_t * pTransport,
  *
  * if( httpLibraryStatus == HTTPSuccess )
  * {
- *     if( response.status == 200 )
+ *     if( pResponse.status == 200 )
  *     {
  *         // Handle a response Status-Code of 200 OK.
  *     }
