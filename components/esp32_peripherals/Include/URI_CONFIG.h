@@ -1,4 +1,3 @@
-#include "esp_http_server.h"
 #include "uri_handler.h"
 
 static const char* TAG = "[Test DNS]";
