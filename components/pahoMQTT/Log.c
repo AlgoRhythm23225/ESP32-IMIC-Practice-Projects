@@ -39,7 +39,9 @@
 #include <string.h>
 
 #if !defined(_WIN32)
+#if !defined(ESP_PLATFORM)
 #include <syslog.h>
+#endif
 #include <sys/stat.h>
 #define GETTIMEOFDAY 1
 #else

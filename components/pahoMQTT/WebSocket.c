@@ -203,7 +203,7 @@ size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data, si
 			ret = 2; /* header 2 bytes */
 		else if ( data_len < 65536u )
 			ret = 4; /* for extra 2-bytes for payload length */
-		else if ( data_len < 0xFFFFFFFFFFFFFFFF )
+		else if ( data_len < 0xFFFFFFFF )
 			ret = 10; /* for extra 8-bytes for payload length */
 		if ( mask_data & 0x1 )
 			ret += sizeof(uint32_t); /* for mask */
@@ -308,7 +308,7 @@ static struct frameData WebSocket_buildFrame(networkHandles* net, int opcode, in
 			memcpy( &rc.wsbuf0[buf_len], &len, 2u );
 			buf_len += 2;
 		}
-		else if ( data_len < 0xFFFFFFFFFFFFFFFF )
+		else if ( data_len < 0xFFFFFFFF )
 		{
 			uint64_t len = htobe64((uint64_t)data_len);
 			rc.wsbuf0[buf_len++] |= (127u & 0x7F);
