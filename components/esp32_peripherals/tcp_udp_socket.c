@@ -121,3 +121,11 @@ void udp_server_task(void *pvParameters) {
     }
     vTaskDelete(NULL);
 }
+
+void tcp_client_task(void* pvParameters) {
+    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    if(sock) {
+        ESP_LOGI("[Socket]", "Socket created succesfully, ID=%d===============",sock);
+    }
+    struct sockaddr_in dest_addr;
+}

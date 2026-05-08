@@ -7,94 +7,153 @@
 #include "esp_event.h"
 // from: "annoying_default_funcs" folder
 #include "nvs_init_in_main.h"
-// from: "components/esp32_peripherals" folder
-#include "wifi_sta_ap.h"
-// from: "components/pahoMQTT" folder
-#include "MQTTAsync.h"
+// project
+#include "mqtt_client.h"
+#include "esp_log.h"
+#include "esp_http_client.h"
+#include "cJSON.h"
+#include "esp_crt_bundle.h"
+#include "tcp_udp_socket.h"
+esp_mqtt_client_handle_t client = NULL;
+const char *TAG = "[MQTT]";
 
-#define ADDRESS     "tcp://test.mosquitto.org:1883"
-#define CLIENTID    "ExampleClientPub"
-#define TOPIC       "MQTT Examples"
-#define PAYLOAD     "Hellooo"
-#define QOS         1
-#define TIMEOUT     10000L
+void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
+    esp_mqtt_event_handle_t event = event_data;
 
-int finished = 0;
-static const char* TAG_STATUS = "[MQTT-STATUS]";
-static const char* TAG_ACTION = "[MQTT-ACTION]";
+    switch ((esp_mqtt_event_id_t)event_id) {
+        case MQTT_EVENT_CONNECTED:
+            ESP_LOGI(TAG, "MQTT connected");
 
-void conlost(void* context, char* cause) {
-    MQTTAsync client = (MQTTAsync)context;
-    MQTTAsync_connectOptions con_opts = MQTTAsync_connectOptions_initializer;
-    int rc;
+            // subcribe topic
+            esp_mqtt_client_subscribe(client, "esp32/led", 0);
 
-    ESP_LOGE(TAG_STATUS, "Connection lost");
-    if (cause) {
-        printf("Cause: %s\n", cause);
-    }
+            // try publish
+            esp_mqtt_client_publish(client, "esp32/led", "online", 0, 0, 0);
+            break;
 
-    ESP_LOGI(TAG_ACTION, "Reconnecting...");
-    con_opts.keepAliveInterval = 20;
-    con_opts.cleansession = 1;
+        case MQTT_EVENT_DISCONNECTED:
+            ESP_LOGI(TAG, "MQTT disconnected");
+            break;
 
-    if ((rc = MQTTAsync_connect(client, &con_opts)) != MQTTASYNC_SUCCESS) {
-        ESP_LOGE(TAG_STATUS,"Failed to start connect, return code %d", rc);
-        finished = 1;    
-    }
-}
+        case MQTT_EVENT_SUBSCRIBED:
+            ESP_LOGI(TAG, "Subcribed");
+            break;
 
-void onDisconnectFailure(void* context, MQTTAsync_failureData* response) {
-    ESP_LOGE(TAG_STATUS, "Disconncet Failed");
-    finished = 1;
-}
+        case MQTT_EVENT_PUBLISHED:
+            ESP_LOGI(TAG, "Published");
+            break;
+        
+        case MQTT_EVENT_DATA:
+            ESP_LOGI(TAG, "TOPIC=%.*s", event->topic_len, event->topic);
+            ESP_LOGI(TAG, "DATA=%.*s", event->data_len, event->data);
+            if (strncmp(event->data, "ON", event->data_len) == 0) {
+                gpio_set_level(LED_PIN, 1);
+            }
+            else if (strncmp(event->data, "OFF", event->data_len) == 0) {
+                gpio_set_level(LED_PIN, 0);          
+            }
+            break;
 
-void onDisconnect(void* context, MQTTAsync_successData* response) {
-    ESP_LOGI(TAG_STATUS, "Successful disconnection");
-    finished = 1;
-}
-
-void onSendFailure(void* context, MQTTAsync_failureData* response) {
-    MQTTAsync client = (MQTTAsync)context;
-    MQTTAsync_disconnectOptions dics_opts = MQTTAsync_disconnectOptions_initializer;
-    int rc;
-
-    ESP_LOGE(TAG_STATUS, "Message send failed token %d error code %d", response->token, response->code);
-
-    ESP_LOGI(TAG_STATUS, "Disconnecting...");
-    dics_opts.onSuccess = onDisconnect;
-    dics_opts.onFailure = onDisconnectFailure;
-    dics_opts.context = client;
-    if ((rc = MQTTAsync_disconnect(client, &dics_opts)) != MQTTASYNC_SUCCESS) {
-        ESP_LOGE(TAG_STATUS, "Failed to start disconnect, return code %d", rc);
-        exit(EXIT_FAILURE);
+        default:
+            break;
     }
 }
 
-// Something wrong on this
-void onSend(void* context, MQTTAsync_successData* response) {
-    MQTTAsync client = (MQTTAsync)context;
-    MQTTAsync_disconnectOptions dics_opts = MQTTAsync_disconnectOptions_initializer;
-    int rc;
+void mqtt_app_start(void) {
+    esp_mqtt_client_config_t mqtt_cfg = {
+        .broker.address.uri = "mqtt://broker.emqx.io:1883"
+    };
 
-    ESP_LOGI(TAG_STATUS, "Message with token value %d delivery confirmed", response->token);
+    client = esp_mqtt_client_init(&mqtt_cfg);
 
-    dics_opts.onSuccess = onDisconnect;
-    dics_opts.onFailure = onDisconnectFailure;
-    dics_opts.context = client;
-    if ((rc = MQTTAsync_disconnect(client, &dics_opts)) != MQTTASYNC_SUCCESS) {
-        ESP_LOGE(TAG_STATUS, "Failed to start disconnect, return code %d", rc);
-        exit(EXIT_FAILURE);
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
+
+    esp_mqtt_client_start(client);
+}
+
+#define WEATHER_API_URL     "http://api.openweathermap.org/data/2.5/weather?q=Hanoi&appid=bf7911260e33a6b7ebd42f893fbe368a&units=metric"
+#define MQTT_TOPIC_WEATHER  "esp32_home/weather"  
+char response_data[1024];
+int response_len = 0;
+esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
+    switch (evt->event_id) {
+        case HTTP_EVENT_ON_DATA:
+            if (!esp_http_client_is_chunked_response(evt->client)) {
+                memcpy(response_data + response_len, evt->data, evt->data_len);
+                response_len += evt->data_len;
+            }
+            break;
+
+        case HTTP_EVENT_ON_FINISH:
+            response_data[response_len] = '\0';
+            break;
+
+        default:
+            break;
+    }
+    return ESP_OK;
+}
+
+void parse_weather_data(const char *json_string) {
+    cJSON *root = cJSON_Parse(json_string);
+    if (root == NULL) {
+        ESP_LOGE("[PARSE]", "Can't parse JSON");
+        return;
+    }
+
+    cJSON *main_obj = cJSON_GetObjectItem(root, "main");
+    if (main_obj) {
+        cJSON *temp = cJSON_GetObjectItem(main_obj, "temp");
+        cJSON *humidity = cJSON_GetObjectItem(main_obj, "humidity");
+
+        if (cJSON_IsNumber(temp) && cJSON_IsNumber(humidity)) {
+            ESP_LOGI("[API]", "Temperature: %.2f ºC", temp->valuedouble);
+            ESP_LOGI("[API]", "Humidity: %d %%", humidity->valueint);
+
+            char message[64];
+            // snprintf(message, sizeof(message), "{\"temp\":%.2f, \"hum\":%d}", temp->valuedouble, humidity->valueint);
+            snprintf(message, sizeof(message), "Temperature: %.2fºC\nHumidity: %d%%", temp->valuedouble, humidity->valueint);
+            esp_mqtt_client_publish(client, "esp32_home/weather", message, 0, 1, 0);
+        }
+
     }
 }
 
+void weather_task(void *pvParameters) {
+    while (1) {
+        if (client != NULL) {
+            esp_http_client_config_t config = {
+                .url = WEATHER_API_URL,
+                .method = HTTP_METHOD_GET,
+                .event_handler = _http_event_handler,
+            };
+            esp_http_client_handle_t http_client = esp_http_client_init(&config);
+            response_len = 0;
+            
+            esp_err_t err = esp_http_client_perform(http_client);
 
+            if (err == ESP_OK) {
+                ESP_LOGI("[HTTP]", "HTTP GET Status = %d", esp_http_client_get_status_code(http_client));
+                parse_weather_data(response_data);
+                ESP_LOGI("[MQTT]", "Sent MQTT");
+            } else {
+                ESP_LOGE("[HTTP]", "HTTP GET request failed: %s", esp_err_to_name(err));
+                ESP_LOGE("[HTTP]", "HTTP GET Status = %d", esp_http_client_get_status_code(http_client));
+            }   
+
+            esp_http_client_cleanup(http_client);
+        }
+        vTaskDelay(pdMS_TO_TICKS(120000));
+    }
+}
 
 void app_main(void) {
+    nvs_flash_init_in_main();
+
+    wifi_init_sta();
+    WIFI_WAIT_CONNECT(wifi_event_group);
+
+    mqtt_app_start();
+    xTaskCreate(weather_task, "weather_task", 8192, NULL, 5, NULL);
 
 }
-
-
-
-
-
-
