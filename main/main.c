@@ -333,20 +333,65 @@ void st7735_fill(uint8_t R, uint8_t G, uint8_t B) {
     }
 }
 
+void st7735_draw_pixel(uint16_t x, uint16_t y, uint16_t color) {
+    if (x > x1 || y > y1) {
+        return;
+    }
+
+    st7735_set_window(x, y, x, y);
+
+    uint8_t data[2];
+    data[0] = color >> 8;
+    data[1] = color & 0xFF;
+
+    lcd_data(data, 2);
+}
+
+void st7735_draw_rectangle() {
+    uint8_t x = 24, y = 70;
+    uint8_t time = 5;
+    uint8_t clr = 0, clr2 = 0, clr3 = 0;
+        while (1) {
+            while(x < 89) {
+                st7735_draw_pixel(x++, y, RGB_convert(clr, clr2, clr3));
+                vTaskDelay(pdMS_TO_TICKS(time));
+            }
+            while(y < 135) {
+                st7735_draw_pixel(x, y++, RGB_convert(clr, clr2, clr3));
+                vTaskDelay(pdMS_TO_TICKS(time));
+            }
+            while(x > 24) {
+                st7735_draw_pixel(x--, y, RGB_convert(clr, clr2, clr3));
+                vTaskDelay(pdMS_TO_TICKS(time));
+            }
+            while(y > 70) {
+                st7735_draw_pixel(x, y--, RGB_convert(clr, clr2, clr3));
+                vTaskDelay(pdMS_TO_TICKS(time));
+            }
+            if (clr < 255) {
+                clr += 15;
+            }
+            if (clr == 255 && clr2 < 255) {
+                clr2 += 15;
+            }
+            if (clr == 255 && clr2 == 255 && clr3 < 255) {
+                clr3 += 15;
+            }
+            if (clr == 255 && clr2 == 255 && clr3 == 255) {
+                clr = clr2 = clr3 = 0;
+            }
+    }    
+}
+
 void app_main(void) {
     nvs_flash_init_in_main();
 
     bus_init();
     st7735_init();
-    while (1) {
-        st7735_fill(240, 238, 233);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        st7735_fill(164, 119, 100);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        st7735_fill(255, 0, 0);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }    
+    st7735_fill(164, 119, 100);
+    st7735_draw_rectangle();
 }
+
 
 // wifi_init_sta();
 // WIFI_WAIT_CONNECT(wifi_event_group);
