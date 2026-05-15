@@ -10,7 +10,7 @@
 #include "esp_log.h"
 #include "esp_err.h"
 
-static spi_device_handle_t rfid_spi = NULL;
+// static spi_device_handle_t rfid_spi = NULL;
 spi_device_handle_t spi_init();
 // uint8_t rc522_read_reg(spi_device_handle_t spi, uint8_t reg);
 // esp_err_t rc522_write_reg(spi_device_handle_t spi, uint8_t reg, uint8_t data);

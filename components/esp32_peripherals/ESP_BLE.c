@@ -168,7 +168,6 @@ void gatts_event_handler(esp_gatts_cb_event_t event,
     // esp_backtrace_print(10);
     // ESP_LOGI(TAG, "gatts_if = %d", gatts_if);
     switch (event) {
-
         // 1. App registered → lưu gatts_if → tạo service
         case ESP_GATTS_REG_EVT: {
             s_gatts_if = gatts_if;
@@ -280,8 +279,9 @@ void gatts_event_handler(esp_gatts_cb_event_t event,
             if (param->write.handle == char_write_handle) {
                 // Kiểm tra độ dài an toàn
                 uint16_t len = param->write.len;
-                if (len >= 200) len = 199;
-
+                if (len >= 200) {
+                    len = 199;
+                }
                 char data[200] = {0};
                 memcpy(data, param->write.value, len);
                 // data[len] = 0; đã được đảm bảo bởi {0} ở trên

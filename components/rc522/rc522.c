@@ -4,6 +4,7 @@
 #include "rc522.h"
 
 uint8_t debug = 0;
+spi_device_handle_t rfid_spi;
 
 // void rc522_set_spi_handle(spi_device_handle_t handle) {
 //     rfid_spi = handle;
