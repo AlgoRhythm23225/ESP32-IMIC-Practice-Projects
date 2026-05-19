@@ -1,6 +1,7 @@
-idf_component_register(SRCS "tcp_udp_socket.c" "ESP_ADC.c" "ESP_DAC.c" "ESP_SPI.c" "ESP_BLE.c"
-                            "wifi_sta_ap.c" "ESP_WIFI_BLE.c" "tcp_udp_socket.c"
+idf_component_register(SRCS "esp_client_http.c" "ESP_MQTT.c" "tcp_udp_socket.c" "ESP_ADC.c" "ESP_DAC.c" "ESP_SPI.c" "ESP_BLE.c"
+                            "wifi_sta_ap.c" "ESP_WIFI_BLE.c" "ESP_MQTT.c" "../../managed_components/espressif__cjson/cJSON/cJSON.c"
                     INCLUDE_DIRS "Include"
+                                "../../managed_components/espressif__cjson/cJSON"
                     REQUIRES    esp_driver_spi 
                                 esp_driver_gpio driver 
                                 esp_driver_ledc
@@ -12,4 +13,9 @@ idf_component_register(SRCS "tcp_udp_socket.c" "ESP_ADC.c" "ESP_DAC.c" "ESP_SPI.
                                 esp_http_server
                                 esp_http_client
                                 esp-tls
-                                mqtt)
+                                mqtt
+                    EMBED_TXTFILES
+                                "../../main/AWS_IOT_Cert/AmazonRootCA1.pem"
+                                "../../main/AWS_IOT_Cert/Device_Certificate.crt"
+                                "../../main/AWS_IOT_Cert/Private_Key.key"
+                                )

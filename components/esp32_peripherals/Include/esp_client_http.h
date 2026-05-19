@@ -23,3 +23,6 @@ void http_rest_with_url(http_state_t http_state);
 void http_rest_with_hostname_path(void);
 
 void http_test_task(void *pvParametters);
+
+esp_err_t _http_event_handler_weather(esp_http_client_event_t *evt);
+void weather_task(void *pvParameters);

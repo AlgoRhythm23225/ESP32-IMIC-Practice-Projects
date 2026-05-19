@@ -1,4 +1,5 @@
 #include "esp_client_http.h"
+#include "ESP_MQTT.h"
 
 static char* TAG = "HTTP_CLIENT";
 // This is handler
@@ -310,4 +311,56 @@ void http_test_task(void *pvParametters) {
   // http_rest_with_hostname_path();
   ESP_LOGI(TAG, "Finish http example");
   vTaskDelete(NULL);
+}
+
+#define WEATHER_API_URL     "http://api.openweathermap.org/data/2.5/weather?q=Hanoi&appid=bf7911260e33a6b7ebd42f893fbe368a&units=metric"
+char response_data[1024];
+int response_len = 0;
+esp_err_t _http_event_handler_weather(esp_http_client_event_t *evt) {
+    switch (evt->event_id) {
+        case HTTP_EVENT_ON_DATA:
+            if (!esp_http_client_is_chunked_response(evt->client)) {
+                memcpy(response_data + response_len, evt->data, evt->data_len);
+                response_len += evt->data_len;
+            }
+            break;
+
+        case HTTP_EVENT_ON_FINISH:
+            response_data[response_len] = '\0';
+            break;
+
+        default:
+            break;
+    }
+    return ESP_OK;
+}
+
+void weather_task(void *pvParameters) {
+    while (1) {
+        if (client != NULL) {
+            esp_http_client_config_t config = {
+                .url = WEATHER_API_URL,
+                .method = HTTP_METHOD_GET,
+                .event_handler = _http_event_handler_weather,
+            };
+            esp_http_client_handle_t http_client = esp_http_client_init(&config);
+            response_len = 0;
+            
+            esp_err_t err = esp_http_client_perform(http_client);
+
+            if (err == ESP_OK) {
+                ESP_LOGI("[HTTP]", "HTTP GET Status = %d", esp_http_client_get_status_code(http_client));
+                parse_weather_data(response_data);
+                ESP_LOGI("[MQTT]", "Sent MQTT, free heap: %d", esp_get_free_heap_size());
+                if (esp_get_free_heap_size() < 100000) {
+                    esp_restart();
+                }
+            } else {
+                ESP_LOGE("[HTTP]", "HTTP GET request failed: %s", esp_err_to_name(err));
+                ESP_LOGE("[HTTP]", "HTTP GET Status = %d", esp_http_client_get_status_code(http_client));           
+            }   
+            esp_http_client_cleanup(http_client);
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
 }
