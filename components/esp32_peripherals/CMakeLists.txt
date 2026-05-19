@@ -1,5 +1,9 @@
-idf_component_register(SRCS "esp_client_http.c" "ESP_MQTT.c" "tcp_udp_socket.c" "ESP_ADC.c" "ESP_DAC.c" "ESP_SPI.c" "ESP_BLE.c"
-                            "wifi_sta_ap.c" "ESP_WIFI_BLE.c" "ESP_MQTT.c" "../../managed_components/espressif__cjson/cJSON/cJSON.c"
+idf_component_register(SRCS 
+                        # In Forder
+                        "esp_client_http.c" "ESP_MQTT.c" "tcp_udp_socket.c" "ESP_ADC.c" "ESP_DAC.c" "ESP_SPI.c" "ESP_BLE.c"
+                        "wifi_sta_ap.c" "ESP_WIFI_BLE.c" "ESP_MQTT.c" 
+                        # Outside Folder
+                        "../../managed_components/espressif__cjson/cJSON/cJSON.c"
                     INCLUDE_DIRS "Include"
                                 "../../managed_components/espressif__cjson/cJSON"
                     REQUIRES    esp_driver_spi 
