@@ -6,74 +6,109 @@
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "driver/uart.h"
+#include "driver/gpio.h"
 // from: "annoying_default_funcs" folder
 #include "nvs_init_in_main.h"
 // project
 
-QueueHandle_t xMyQueue;
+QueueHandle_t xUartEventQueue;
+QueueHandle_t xLogicQueue;
 
-void task_1(void *vParameter){
-    int c;
-    int ind = 0;
-    char *pBuffer = malloc(100);
-    if (pBuffer == NULL) {
-        vTaskDelete(NULL);
-    }
-    memset(pBuffer, 0, sizeof(pBuffer));
+typedef struct {
+    uint8_t payLoad[128];
+    uint16_t length;
+} data_packet_t;
 
-    while (1) {
-        c = getchar();
-        if (c == EOF) {
-            vTaskDelay(pdMS_TO_TICKS(10));
-            continue;
-        }
-        if (c != '\n'  && c != '\r') {
-            if (ind < 99) {
-                pBuffer[ind++] = c;
-                printf("%c", c);
-            }
-        }
-        else if (ind > 0) {
-            pBuffer[ind] = '\0';
-            printf("\n");
-            if (xQueueSend(xMyQueue, &pBuffer, portMAX_DELAY) == pdPASS) {
-                ESP_LOGI("[TASK 1]", "Sent string to Queue!");
-            }
-            else {
-                free(pBuffer);
-            }
+#define TX_PIN (GPIO_NUM_13)
+#define RX_PIN (GPIO_NUM_35)
+#define UART_PORT_NUM (UART_NUM_1)
+#define BUF_SIZE (1024)
 
-            pBuffer = malloc(100);
-            if (pBuffer == NULL) {
-                ESP_LOGE("[Task 1]", "Not enough RAM for allocation!");
-                vTaskDelete(NULL);
-            }
-            memset(pBuffer, 0, 100);
-            ind = 0;
-        } 
-    }
+void init_uart_with_queue(void) {
+    uart_config_t uart_cfg = {
+        .baud_rate = 115200,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_EVEN,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .source_clk = UART_SCLK_DEFAULT,
+    };
+
+    ESP_ERROR_CHECK(uart_param_config(UART_PORT_NUM, &uart_cfg));
+    ESP_ERROR_CHECK(uart_set_pin(UART_PORT_NUM, TX_PIN, RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_driver_install(UART_PORT_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 20, &xUartEventQueue, 0));
 }
 
-void task_2(void *vParameter){
-    char *pReceivedBuffer = NULL;
-
+void uart_receiver_task(void *pvParameters){
+    uart_event_t event;
+    uint8_t *dtmp = (uint8_t*)malloc(BUF_SIZE);
     while (1) {
-        if (xQueueReceive(xMyQueue, &pReceivedBuffer, portMAX_DELAY) == pdPASS) {
-            ESP_LOGI("[TASK 2]", "Received string: %s!", pReceivedBuffer);
-            free(pReceivedBuffer);
-            pReceivedBuffer = NULL;
-        } 
+        if (xQueueReceive(xUartEventQueue, (void*)&event, portMAX_DELAY)) {
+            ESP_LOGI("[Queue]", "Got string from UART");
+            memset(dtmp, 0, BUF_SIZE);
+        }
+
+        switch (event.type) {
+            // When uart received data
+            case UART_DATA:
+                if (event.size > 0) {
+                    data_packet_t packet;
+                    int len = uart_read_bytes(UART_PORT_NUM, dtmp, event.size, portMAX_DELAY);
+
+                    if (len < sizeof(packet.payLoad)) {
+                        memcpy(packet.payLoad, dtmp, len);
+                        packet.length = len;
+                    
+                        if (xQueueSend(xLogicQueue, &packet, 0) != pdTRUE) {
+                            ESP_LOGW("[Queue]", "The queue is full! Some data may lost!");
+                        }
+                    }
+                }
+                break;
+            
+            // FIX Error
+            case UART_FIFO_OVF: 
+                ESP_LOGW("[UART]", "UART FIFO overflow!");
+                uart_flush_input(UART_PORT_NUM);
+                xQueueReset(xUartEventQueue);
+                break;
+
+            case UART_BUFFER_FULL:
+                ESP_LOGW("[UART]", "Ring buffer full!");
+                uart_flush_input(UART_PORT_NUM);
+                xQueueReset(xUartEventQueue);
+                break;
+
+            default:
+                break;
+        }
+    }   
+    free(dtmp);
+    vTaskDelete(NULL);
+}
+
+void logic_process_task(void *vParameter){
+    data_packet_t received_packet;
+    while (1) {
+        if (xQueueReceive(xLogicQueue, &received_packet, portMAX_DELAY)) {
+            ESP_LOGI("[Queue]", "Got the string %d characters from Task 1", received_packet.length);
+            printf("String: %.*s\n", received_packet.length, received_packet.payLoad);
+        }
     }
+    vTaskDelete(NULL);
 }
 
 void app_main(void) {
     nvs_flash_init_in_main();
 
-    xMyQueue = xQueueCreate(5, sizeof(int));
+    init_uart_with_queue();
 
-    if (xMyQueue != NULL) {
-        xTaskCreate(task_1, "Task 1", 4096, NULL, 4, NULL);
-        xTaskCreate(task_2, "Task 2", 2048, NULL, 4, NULL);   
+    xLogicQueue = xQueueCreate(10, sizeof(data_packet_t));
+
+    if (xLogicQueue != NULL) {
+        xTaskCreate(uart_receiver_task, "Task 1", 4096, NULL, 12, NULL);
+        xTaskCreate(logic_process_task, "Task 2", 2048, NULL, 10, NULL);   
     }
     else {
         ESP_LOGE("[Main]", "Failed to create Queue");
