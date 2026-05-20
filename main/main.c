@@ -99,19 +99,111 @@ void logic_process_task(void *vParameter){
     vTaskDelete(NULL);
 }
 
+#define BUFFER_SIZE 5
+#define TOTAL_ITEM  15
+
+int ring_buffer[BUF_SIZE];
+int head = 0;
+int tail = 0;
+
+int total_consumed_count = 0;
+
+SemaphoreHandle_t xBufMutex = NULL;
+SemaphoreHandle_t xEmptySlotsSem = NULL;
+SemaphoreHandle_t xFilledSlotsSem = NULL;
+
+void producer_task(void *pvParameters) {
+    int id = (int)pvParameters;
+
+    for (int i = 0; i < 3; i++) {
+        xSemaphoreTake(xEmptySlotsSem, portMAX_DELAY);
+
+        xSemaphoreTake(xBufMutex, portMAX_DELAY);
+
+        ring_buffer[head] = id;
+        head = (head + 1) % BUFFER_SIZE;
+        printf("Producer %d: Ghi thanh cong gia tri %d\n", id, id);
+
+        xSemaphoreGive(xBufMutex);
+
+        xSemaphoreGive(xFilledSlotsSem);
+
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    printf("--> Producer %d: Da hoan thanh cong viec\n", id);
+    vTaskDelete(NULL);
+}
+
+void consumer_task(void *pvParameter) {
+    int consumer_id = (int)pvParameter;
+
+    while(1) {
+        xSemaphoreTake(xBufMutex, portMAX_DELAY);
+        if (total_consumed_count >= TOTAL_ITEM) {
+            xSemaphoreGive(xBufMutex);
+            break;
+        }
+        xSemaphoreGive(xBufMutex);
+
+        xSemaphoreTake(xFilledSlotsSem, portMAX_DELAY);
+        
+        xSemaphoreTake(xBufMutex, portMAX_DELAY);
+
+        if (total_consumed_count < TOTAL_ITEM) {
+            int data = ring_buffer[tail];
+            tail = (tail + 1) % BUFFER_SIZE;
+            total_consumed_count++;
+            printf("[Consumer %d] Doc duoc: %d ( Tong tich luy: %d/15)\n", consumer_id, data, total_consumed_count);
+        }
+
+        xSemaphoreGive(xBufMutex);
+
+        xSemaphoreGive(xEmptySlotsSem);
+
+        vTaskDelay(pdMS_TO_TICKS(150));
+    }
+
+    printf("--> Consumer %d: Da xu li du lieu, dung tac vu.\n", consumer_id);
+    vTaskDelete(NULL);
+}
+
 void app_main(void) {
     nvs_flash_init_in_main();
 
-    init_uart_with_queue();
+    // init_uart_with_queue();
 
-    xLogicQueue = xQueueCreate(10, sizeof(data_packet_t));
+    // xLogicQueue = xQueueCreate(10, sizeof(data_packet_t));
 
-    if (xLogicQueue != NULL) {
-        xTaskCreate(uart_receiver_task, "Task 1", 4096, NULL, 12, NULL);
-        xTaskCreate(logic_process_task, "Task 2", 2048, NULL, 10, NULL);   
+    // if (xLogicQueue != NULL) {
+    //     xTaskCreate(uart_receiver_task, "Task 1", 4096, NULL, 12, NULL);
+    //     xTaskCreate(logic_process_task, "Task 2", 2048, NULL, 10, NULL);   
+    // }
+    // else {
+    //     ESP_LOGE("[Main]", "Failed to create Queue");
+    // }
+
+    printf("=== KHOI CHAY BAI TOAN PRODUCER - CONSUMER (MUTEX + SEMAPHORE) ===\n"); 
+
+    xBufMutex = xSemaphoreCreateMutex();
+    xEmptySlotsSem = xSemaphoreCreateCounting(BUFFER_SIZE, BUFFER_SIZE);
+    xFilledSlotsSem = xSemaphoreCreateCounting(BUFFER_SIZE, 0);
+
+    if (xBufMutex == NULL || xEmptySlotsSem == NULL || xFilledSlotsSem == NULL) {
+        printf("Loi khoi tao Semaphore/Mutex!\n");
+        return;
     }
-    else {
-        ESP_LOGE("[Main]", "Failed to create Queue");
+
+    for (int i = 0; i < 2; i++) {
+        char task_name[20];
+        snprintf(task_name, sizeof(task_name), "Consumer_%d", i);
+        xTaskCreate(consumer_task, task_name, 2048, (void*)i, 5, NULL);
+    }
+
+    for (int i = 0; i < 5; i++) {
+        char task_name[20];
+        snprintf(task_name, sizeof(task_name), "Producer_%d", i);
+        xTaskCreate(producer_task, task_name, 2048, (void*)i, 5, NULL);
     }
 }
 
